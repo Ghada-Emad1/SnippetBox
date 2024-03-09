@@ -1,0 +1,2 @@
+Error 	2024/03/09 18:53:25 main.go:30: listen tcp :4000: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+exit status 1
