@@ -3,47 +3,45 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"log"
+
 	"net/http"
 	"strconv"
 )
 
-func Home(w http.ResponseWriter, r *http.Request) {
+func (app *Application) Home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		app.notfound(w)
 		return
 	}
-	Files:=[]string{
+	Files := []string{
 		"./ui/html/base.tmpl",
 		"./ui/html/partials/nav.tmpl",
 		"./ui/html/pages/home.tmpl",
 	}
-	ts,err:=template.ParseFiles(Files...)
-	if err!=nil{
-		log.Println(err.Error())
-		http.Error(w,"Internal Server Error",http.StatusInternalServerError)
+	ts, err := template.ParseFiles(Files...)
+	if err != nil {
+		app.ServeError(w, err)
 		return
 	}
-	err=ts.ExecuteTemplate(w,"base",nil)
-	if err!=nil{
-		log.Println(err.Error())
-		http.Error(w,"Internal Server Error",http.StatusInternalServerError)
+	err = ts.ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		app.ServeError(w, err)
 		return
 	}
 	//w.Write([]byte("Hello From snippet Application"))
 }
-func snippetView(w http.ResponseWriter, r *http.Request) {
+func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 0 {
-		http.NotFound(w, r)
+		app.notfound(w)
 		return
 	}
 	fmt.Fprintf(w, "Displaying a specific snippet with ID %d", id)
 }
-func snippetCreate(w http.ResponseWriter, r *http.Request) {
+func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "Post")
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		app.ClientError(w,http.StatusMethodNotAllowed)
 		return
 	}
 	w.Write([]byte("Create A New Snippet"))
