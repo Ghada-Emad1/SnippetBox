@@ -22,11 +22,11 @@ type Application struct {
 func main() {
 
 	addr := flag.String("addr", ":4000", "HTTP network address")
-	dsn := flag.String("dsn", "ghada:pass@/snippetbox?parsetime=true", "postgres data source")
-
+	dsn := flag.String("dsn", "user=ghada password=pass dbname=snippetbox sslmode=disable", "postgres data source")
+	flag.Parse()
+	
 	infoLog := log.New(os.Stdout, "Info \t", log.Ltime|log.Ldate)
 	errorLog := log.New(os.Stderr, "Error \t", log.Ltime|log.Ldate|log.Lshortfile)
-	flag.Parse()
 
 	db, err := OpenDB(*dsn)
 	if err != nil {
