@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"html/template"
+	// "html/template"
 	"net/http"
 	"strconv"
+
+	"github.com/Ghada-Emad1/SnippetBox/internal/models"
 )
 
 func (app *Application) Home(w http.ResponseWriter, r *http.Request) {
@@ -12,21 +15,29 @@ func (app *Application) Home(w http.ResponseWriter, r *http.Request) {
 		app.notfound(w)
 		return
 	}
-	Files := []string{
-		"./ui/html/base.tmpl",
-		"./ui/html/partials/nav.tmpl",
-		"./ui/html/pages/home.tmpl",
-	}
-	ts, err := template.ParseFiles(Files...)
-	if err != nil {
-		app.ServeError(w, err)
+	snippets,err:=app.snippets.Latest()
+	if err!=nil{
+		app.ServeError(w,err)
 		return
 	}
-	err = ts.ExecuteTemplate(w, "base", nil)
-	if err != nil {
-		app.ServeError(w, err)
-		return
+	for _,snipet:=range snippets{
+		fmt.Fprintf(w,"%v\n",snipet)
 	}
+	// Files := []string{
+	// 	"./ui/html/base.tmpl",
+	// 	"./ui/html/partials/nav.tmpl",
+	// 	"./ui/html/pages/home.tmpl",
+	// }
+	// ts, err := template.ParseFiles(Files...)
+	// if err != nil {
+	// 	app.ServeError(w, err)
+	// 	return
+	// }
+	// err = ts.ExecuteTemplate(w, "base", nil)
+	// if err != nil {
+	// 	app.ServeError(w, err)
+	// 	return
+	// }
 	//w.Write([]byte("Hello From snippet Application"))
 }
 func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +46,16 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 		app.notfound(w)
 		return
 	}
-	fmt.Fprintf(w, "Displaying a specific snippet with ID %d", id)
+	snippets,err:=app.snippets.Get(id)
+	if err!=nil{
+		if errors.Is(err,models.ErrNoRecord){
+			app.notfound(w)
+		}else{
+			app.ServeError(w,err)
+		}
+		return
+	}
+	fmt.Fprintf(w, "Displaying a specific snippet with ID %v", snippets)
 }
 func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
