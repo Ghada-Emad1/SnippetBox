@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	// "html/template"
 	"net/http"
 	"strconv"
 
@@ -15,14 +14,19 @@ func (app *Application) Home(w http.ResponseWriter, r *http.Request) {
 		app.notfound(w)
 		return
 	}
-	snippets,err:=app.snippets.Latest()
-	if err!=nil{
-		app.ServeError(w,err)
+	
+	snippets, err := app.snippets.Latest()
+	if err != nil {
+		app.ServeError(w, err)
 		return
 	}
-	for _,snipet:=range snippets{
-		fmt.Fprintf(w,"%v\n",snipet)
-	}
+
+	data:=app.newTemplateData(r)
+	data.Snippets=snippets
+	app.render(w, http.StatusOK, "home.tmpl",data)
+	// for _, snipet := range snippets {
+	// 	fmt.Fprintf(w, "%v\n", snipet)
+	// }
 	// Files := []string{
 	// 	"./ui/html/base.tmpl",
 	// 	"./ui/html/partials/nav.tmpl",
@@ -33,12 +37,15 @@ func (app *Application) Home(w http.ResponseWriter, r *http.Request) {
 	// 	app.ServeError(w, err)
 	// 	return
 	// }
-	// err = ts.ExecuteTemplate(w, "base", nil)
+	// data:=&templatesData{
+	// 	Snippets:snippets,
+	// }
+	// err = ts.ExecuteTemplate(w, "base", data)
 	// if err != nil {
 	// 	app.ServeError(w, err)
 	// 	return
 	// }
-	//w.Write([]byte("Hello From snippet Application"))
+	// w.Write([]byte("Hello From snippet Application"))
 }
 func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
@@ -46,16 +53,38 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 		app.notfound(w)
 		return
 	}
-	snippets,err:=app.snippets.Get(id)
-	if err!=nil{
-		if errors.Is(err,models.ErrNoRecord){
+	snippet, err := app.snippets.Get(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
 			app.notfound(w)
-		}else{
-			app.ServeError(w,err)
+		} else {
+			app.ServeError(w, err)
 		}
 		return
 	}
-	fmt.Fprintf(w, "Displaying a specific snippet with ID %v", snippets)
+	data:=app.newTemplateData(r)
+	data.Snippet=snippet
+	app.render(w,http.StatusOK,"view.tmpl",data)
+	// Files := []string{
+	// 	"./ui/html/base.tmpl",
+	// 	"./ui/html/partials/nav.tmpl",
+	// 	"./ui/html/pages/view.tmpl",
+	// }
+
+	// ts, err := template.ParseFiles(Files...)
+	// if err != nil {
+	// 	app.ServeError(w, err)
+	// 	return
+	// }
+	// data := &templatesData{
+	// 	Snippet: snippet,
+	// }
+	// err = ts.ExecuteTemplate(w, "base", data)
+	// if err != nil {
+	// 	app.ServeError(w, err)
+	// }
+
+	// fmt.Fprintf(w, "Displaying a specific snippet with ID %v", snippet)
 }
 func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -68,9 +97,9 @@ func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	content := "O snail\nClimb Mount Fuji,\nBut slowly, slowly!\n\n– Kobayashi Issa"
 
 	// expires,err := strconv.Atoi("7") // current local time
-	expires:=7
-      
-	id, err := app.snippets.Insert(title, content,expires)
+	expires := 7
+
+	id, err := app.snippets.Insert(title, content, expires)
 	if err != nil {
 		app.ServeError(w, err)
 		return
