@@ -14,6 +14,7 @@ func (app *Application) Home(w http.ResponseWriter, r *http.Request) {
 		app.notfound(w)
 		return
 	}
+	//panic("OHH SOMETHING WENT WRONG")
 	
 	snippets, err := app.snippets.Latest()
 	if err != nil {
