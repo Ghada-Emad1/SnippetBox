@@ -95,7 +95,8 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprintf(w, "Displaying a specific snippet with ID %v", snippet)
 }
 func(app *Application)snippetCreate(w http.ResponseWriter,r *http.Request){
-	w.Write([]byte("Display the form for creating new snippet"))
+	data:=app.newTemplateData(r)
+	app.render(w,http.StatusOK,"create.tmpl",data)
 }
 
 func (app *Application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
