@@ -7,8 +7,16 @@ import (
 	"strconv"
 
 	"github.com/Ghada-Emad1/SnippetBox/internal/models"
+	"github.com/Ghada-Emad1/SnippetBox/internal/validator"
 	"github.com/julienschmidt/httprouter"
 )
+
+type snippetCreateForm struct {
+	Title   string
+	Content string
+	Expires int
+	validator.Validator
+}
 
 func (app *Application) Home(w http.ResponseWriter, r *http.Request) {
 	// if r.URL.Path != "/" {
@@ -16,16 +24,16 @@ func (app *Application) Home(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 	//panic("OHH SOMETHING WENT WRONG")
-	
+
 	snippets, err := app.snippets.Latest()
 	if err != nil {
 		app.ServeError(w, err)
 		return
 	}
 
-	data:=app.newTemplateData(r)
-	data.Snippets=snippets
-	app.render(w, http.StatusOK, "home.tmpl",data)
+	data := app.newTemplateData(r)
+	data.Snippets = snippets
+	app.render(w, http.StatusOK, "home.tmpl", data)
 	// for _, snipet := range snippets {
 	// 	fmt.Fprintf(w, "%v\n", snipet)
 	// }
@@ -55,9 +63,9 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 	// 	app.notfound(w)
 	// 	return
 	// }
-	params:=httprouter.ParamsFromContext(r.Context())
-	id,err:=strconv.Atoi(params.ByName("id"))
-	if err!=nil{
+	params := httprouter.ParamsFromContext(r.Context())
+	id, err := strconv.Atoi(params.ByName("id"))
+	if err != nil {
 		app.notfound(w)
 		return
 	}
@@ -70,9 +78,9 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	data:=app.newTemplateData(r)
-	data.Snippet=snippet
-	app.render(w,http.StatusOK,"view.tmpl",data)
+	data := app.newTemplateData(r)
+	data.Snippet = snippet
+	app.render(w, http.StatusOK, "view.tmpl", data)
 	// Files := []string{
 	// 	"./ui/html/base.tmpl",
 	// 	"./ui/html/partials/nav.tmpl",
@@ -94,25 +102,68 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 
 	// fmt.Fprintf(w, "Displaying a specific snippet with ID %v", snippet)
 }
-func(app *Application)snippetCreate(w http.ResponseWriter,r *http.Request){
-	data:=app.newTemplateData(r)
-	app.render(w,http.StatusOK,"create.tmpl",data)
+func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+	// Initialize a new createSnippetForm instance and pass it to the template.
+	// Notice how this is also a great opportunity to set any default or
+	// 'initial' values for the form --- here we set the initial value for the
+	// snippet expiry to 365 days.
+	data.Form = snippetCreateForm{
+		Expires: 365,
+	}
+	app.render(w, http.StatusOK, "create.tmpl", data)
 }
 
 func (app *Application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
-	// if r.Method != http.MethodPost {
-	// 	w.Header().Set("Allow", "Post")
-	// 	app.ClientError(w, http.StatusMethodNotAllowed)
+
+	err := r.ParseForm()
+	if err != nil {
+		app.ClientError(w, http.StatusBadRequest)
+	}
+
+	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
+	if err != nil {
+		app.ClientError(w, http.StatusBadRequest)
+		return
+	}
+
+	form := snippetCreateForm{
+		Title:   r.PostForm.Get("title"),
+		Content: r.PostForm.Get("content"),
+		Expires: expires,
+	}
+	form.CheckField(validator.NotBlank(form.Title), "title", "This is Field can't be blank")
+	form.CheckField(validator.NotBlank(form.Content), "content", "This Field can't be blank")
+	form.CheckField(validator.MaxChar(form.Title, 100), "title", "This is field can't be more than 100 char")
+	form.CheckField(validator.PermittedInt(form.Expires, 1, 7, 365), "expires", "This Field must equal 1,7 or 365")
+	// if strings.TrimSpace(form.Title) == "" {
+	// 	form.FieldsErrors["title"] = "This Field can't be blank"
+	// } else if utf8.RuneCountInString("title") > 100 {
+	// 	form.FieldsErrors["title"] = "This Field can't be more than 100 characters long"
+	// }
+
+	// if strings.TrimSpace(form.Content) == "" {
+	// 	form.FieldsErrors["content"] = "This is Field can't be blank"
+	// }
+
+	// if form.Expires != 7 && form.Expires != 1 && form.Expires != 356 {
+	// 	form.FieldsErrors["expires"] = "This Field must equal to 1,7 or 365"
+	// }
+
+	// if len(form.FieldsErrors) > 0 {
+	// 	data := app.newTemplateData(r)
+	// 	data.Form = form
+	// 	app.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
 	// 	return
 	// }
 
-	title := "O snail"
-	content := "O snail\nClimb Mount Fuji,\nBut slowly, slowly!\n\n– Kobayashi Issa"
-
-	// expires,err := strconv.Atoi("7") // current local time
-	expires := 7
-
-	id, err := app.snippets.Insert(title, content, expires)
+	if !form.Valid() {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
+		return
+	}
+	id, err := app.snippets.Insert(form.Title, form.Content, form.Expires)
 	if err != nil {
 		app.ServeError(w, err)
 		return

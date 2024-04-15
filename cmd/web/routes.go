@@ -11,9 +11,8 @@ func (app *Application) Routes() http.Handler {
 	router := httprouter.New()
 
 	//update the router to serve static files
-	fileserver := http.FileServer(http.Dir("./ui/static/"))
-	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileserver))
-
+	fileServer := http.FileServer(http.Dir("./ui/static"))
+	router.Handler(http.MethodGet, "/static/", http.StripPrefix("/static", fileServer))
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		app.notfound(w)
 	})
