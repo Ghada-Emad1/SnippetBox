@@ -54,7 +54,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:     *addr,
-		Handler:  app.Routes(),
+		Handler:  app.routes(),
 		ErrorLog: errorLog,
 	}
 

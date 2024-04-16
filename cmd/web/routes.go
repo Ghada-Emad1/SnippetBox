@@ -3,26 +3,24 @@ package main
 import (
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/julienschmidt/httprouter" // New import
 	"github.com/justinas/alice"
 )
 
-func (app *Application) Routes() http.Handler {
+func (app *Application) routes() http.Handler {
+	// Initialize the router.
 	router := httprouter.New()
-
-	//update the router to serve static files
-	fileServer := http.FileServer(http.Dir("./ui/static"))
-	router.Handler(http.MethodGet, "/static/", http.StripPrefix("/static", fileServer))
-	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		app.notfound(w)
-	})
-
+	// Update the pattern for the route for the static files.
+	fileServer := http.FileServer(http.Dir("./ui/static/"))
+	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
+	// And then create the routes using the appropriate methods, patterns and
+	// handlers.
 	router.HandlerFunc(http.MethodGet, "/", app.Home)
 	router.HandlerFunc(http.MethodGet, "/snippet/view/:id", app.snippetView)
 	router.HandlerFunc(http.MethodGet, "/snippet/create", app.snippetCreate)
 	router.HandlerFunc(http.MethodPost, "/snippet/create", app.snippetCreatePost)
-
-	//return app.recoverPanic(app.logRequeset(secureHeaders(mux)))
+	// Create the middleware chain as normal.
 	standard := alice.New(app.recoverPanic, app.logRequeset, secureHeaders)
+	// Wrap the router with the middleware and return it as normal.
 	return standard.Then(router)
 }
