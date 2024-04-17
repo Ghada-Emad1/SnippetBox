@@ -116,22 +116,28 @@ func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 
 func (app *Application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
 
-	err := r.ParseForm()
-	if err != nil {
-		app.ClientError(w, http.StatusBadRequest)
-	}
-
-	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
-	if err != nil {
-		app.ClientError(w, http.StatusBadRequest)
+	// err := r.ParseForm()
+	// if err != nil {
+	// 	app.ClientError(w, http.StatusBadRequest)
+	// }
+	var form snippetCreateForm
+	err := app.decodePostForm(r, &form)
+	if err!=nil{
+		app.ClientError(w,http.StatusBadRequest)
 		return
 	}
 
-	form := snippetCreateForm{
-		Title:   r.PostForm.Get("title"),
-		Content: r.PostForm.Get("content"),
-		Expires: expires,
-	}
+	// expires, err := strconv.Atoi(r.PostForm.Get("expires"))
+	// if err != nil {
+	// 	app.ClientError(w, http.StatusBadRequest)
+	// 	return
+	// }
+
+	// form := snippetCreateForm{
+	// 	Title:   r.PostForm.Get("title"),
+	// 	Content: r.PostForm.Get("content"),
+	// 	Expires: expires,
+	// }
 	form.CheckField(validator.NotBlank(form.Title), "title", "This is Field can't be blank")
 	form.CheckField(validator.NotBlank(form.Content), "content", "This Field can't be blank")
 	form.CheckField(validator.MaxChar(form.Title, 100), "title", "This is field can't be more than 100 char")
