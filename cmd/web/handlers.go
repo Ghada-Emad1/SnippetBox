@@ -163,6 +163,7 @@ func (app *Application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	// 	return
 	// }
 
+	
 	if !form.Valid() {
 		data := app.newTemplateData(r)
 		data.Form = form
