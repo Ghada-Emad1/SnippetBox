@@ -5,11 +5,14 @@ import (
 	"flag"
 	"html/template"
 	"os"
+	"time"
 
 	"log"
 	"net/http"
 
 	"github.com/Ghada-Emad1/SnippetBox/internal/models"
+	"github.com/alexedwards/scs/postgresstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
 
 	_ "github.com/lib/pq"
@@ -21,6 +24,7 @@ type Application struct {
 	snippets      *models.SnippetModel
 	templateCache map[string]*template.Template
 	formDecoder   *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -44,12 +48,16 @@ func main() {
 	}
 
 	formdecoder:=form.NewDecoder()
+	sessionManager:=scs.New()
+	sessionManager.Store=postgresstore.New(db)
+	sessionManager.Lifetime=12*time.Hour
 	app := &Application{
 		ErrorLog:      errorLog,
 		InfoLog:       infoLog,
 		snippets:      &models.SnippetModel{DB: db},
 		templateCache: templateCache,
 		formDecoder: formdecoder,
+		sessionManager: sessionManager,
 	}
 
 	srv := &http.Server{
@@ -67,7 +75,7 @@ func OpenDB(dsn string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	if db.Ping(); err != nil {
+	if err=db.Ping(); err != nil {
 		return nil, err
 	}
 	return db, nil
